@@ -6,8 +6,9 @@ const {
   getLikesByPostId,
 } = require("../like/like.controllers");
 const { authenticateToken } = require("../middleware/AuthenticateToken");
+const { verifyToken } = require("../middleware/VerifyToken");
 router.get("/:postId", getLikesByPostId);
-router.post("/:postId", authenticateToken, addLike);
+router.post("/:postId", verifyToken, addLike);
 router.delete("/:likeId", authenticateToken, deleteLike);
 
 module.exports = router;

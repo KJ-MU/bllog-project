@@ -4,7 +4,7 @@ const Comment = require("../models/CommentSchema");
 exports.getCommentsByPostId = async (req, res, next) => {
   try {
     const PostId = req.params.id;
-    const comments = await Comment.find({ post: PostId });
+    const comments = await Comment.find({ post: PostId }).populate("user");
     res.status(201).json(comments);
   } catch (error) {
     next(error);

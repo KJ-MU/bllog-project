@@ -21,11 +21,11 @@ exports.addLike = async (req, res, next) => {
     // Check if the user has already liked the post
     const existingLike = await Like.findOne({ post: postId, user: userId });
 
-    if (existingLike) {
-      return res
-        .status(400)
-        .json({ message: "You have already liked this post" });
-    }
+    // if (existingLike) {
+    //   return res
+    //     .status(400)
+    //     .json({ message: "You have already liked this post" });
+    // }
 
     // Create the like and increment the count
     // const like = await Like.create({ post: postId, user: userId });
@@ -35,11 +35,18 @@ exports.addLike = async (req, res, next) => {
     // Create the like
     const like = new Like({ user: userId, post: postId });
     await like.save();
+    console.log("🚀 ~ exports.addLike= ~ like:", like);
 
     // Increment the post's like count
-    await Post.findByIdAndUpdate(postId, { $inc: { likeCount: 1 } });
+    const updatedPost = await Post.findByIdAndUpdate(
+      postId,
+      {
+        $inc: { likeCount: 1 },
+      },
+      { new: true }
+    );
 
-    res.status(201).json(like);
+    res.status(201).json(updatedPost);
   } catch (error) {
     next(error);
   }

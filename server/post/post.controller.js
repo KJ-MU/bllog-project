@@ -1,4 +1,5 @@
 const Post = require("../models/PostSchema");
+const User = require("../models/UserSchema");
 const Categories = require("../models/CategoriesSchema");
 const bcrypt = require("bcrypt");
 const path = require("path");
@@ -14,11 +15,54 @@ exports.getAllPost = async (req, res, next) => {
     next(error);
   }
 };
+exports.getFeaturedPost = async (req, res, next) => {
+  try {
+    const featuredPost = await Post.findOne()
+      .sort({ likeCount: -1 })
+      .populate("categories")
+      .populate("user");
+    res.json(featuredPost); // Return the selected featured post
+  } catch (error) {
+    next(error);
+  }
+};
+exports.getUserPosts = async (req, res, next) => {
+  try {
+    // Extract user ID from request parameters
+    const userId = req.params.userId;
 
+    // Find posts by user ID
+    const userPosts = await Post.find({ user: userId });
+
+    res.json(userPosts);
+  } catch (error) {
+    next(error);
+  }
+};
+exports.getRandomPost = async (req, res, next) => {
+  try {
+    const featuredPost = await Post.aggregate([{ $sample: { size: 1 } }]);
+    const userId = featuredPost[0].user;
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const combinedData = {
+      ...featuredPost[0],
+      user: user, // Replace the user ID with user information
+    };
+
+    res.json(combinedData); // Return the selected featured post
+  } catch (error) {
+    console.log("🚀 ~ exports.getRandomPost= ~ error:", error);
+    next(error);
+  }
+};
 exports.getPostsByCategoryId = async (req, res, next) => {
   try {
     categoryId = req.params.id;
-    const posts = await Post.find({ categories: categoryId });
+    const posts = await Post.find({ categories: { _id: categoryId } });
 
     res.status(200).json(posts);
   } catch (error) {
@@ -38,25 +82,35 @@ exports.createPost = async (req, res, next) => {
 
     let newPostData = { ...req.body };
 
-    // Check if the categories already exist
-    const existingCategories = await Categories.findOne({
-      tag: req.body.categories,
-    });
-    if (existingCategories) {
-      newPostData.categories = existingCategories._id; // Use the existing category ID
-    } else {
-      // Create a new category if it doesn't exist
-      const newCategory = await Categories.create({ tag: req.body.categories });
-      newPostData.categories = newCategory._id;
+    const categoriesArray = req.body.categories
+      .split(",")
+      .map((category) => category.trim());
+
+    // Array to hold category IDs
+    const categoryIds = [];
+
+    // Loop through categories array
+    for (const category of categoriesArray) {
+      // Check if the category already exists
+      const existingCategory = await Categories.findOne({ tag: category });
+      if (existingCategory) {
+        categoryIds.push(existingCategory._id); // Use the existing category ID
+      } else {
+        // Create a new category if it doesn't exist
+        const newCategory = await Categories.create({ tag: category });
+        categoryIds.push(newCategory._id);
+      }
     }
 
+    // Set the categories array in newPostData
+    newPostData.categories = categoryIds;
     // Handle image upload
     const imageFile = req.file;
     const imageUrl = "images/" + imageFile.filename;
     newPostData.image = imageUrl;
 
     // Set the user ID
-    newPostData.user = req.user.userId;
+    newPostData.user = req.user.id;
 
     // Create the new post
     const newPost = await Post.create(newPostData);
@@ -68,7 +122,10 @@ exports.createPost = async (req, res, next) => {
 };
 exports.getPostById = async (req, res, next) => {
   try {
-    const post = await Post.findById(req.params.id);
+    const { id } = req.params.id;
+    const post = await Post.findById(req.params.id)
+      .populate("user")
+      .populate("categories");
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
     }

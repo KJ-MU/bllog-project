@@ -8,14 +8,16 @@ const {
   editUser,
   logIn,
   searchUser,
+  getUserById,
 } = require("./user.controllers");
 
 const fileUpload = require("../middleware/FileUpload");
 
 router.post("/signup", fileUpload.single("image"), userSignUP);
-router.get("/", getAllUsers);
-router.get("/search/:name", searchUser);
 router.post("/login", logIn);
+router.get("/", getAllUsers);
+router.get("/:id", getUserById);
+router.get("/search/:name", searchUser);
 router.delete("/", authenticateToken, deleteUserById);
 router.put("/", authenticateToken, fileUpload.single("image"), editUser);
 module.exports = router;

@@ -10,6 +10,7 @@ exports.authenticateToken = (req, res, next) => {
     }
 
     const token = authHeader.split(" ")[1];
+
     const decodedData = jwt.verify(token, process.env.secret_key);
 
     req.user = decodedData;

@@ -3,7 +3,19 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const fs = require("fs");
 const path = require("path");
+exports.getUserById = async (req, res, next) => {
+  try {
+    const { id } = req.params.id;
+    const user = await User.findById(req.params.id);
 
+    if (!user) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    next(error);
+  }
+};
 exports.getAllUsers = async (req, res, next) => {
   try {
     const users = await User.find();
@@ -55,7 +67,7 @@ exports.userSignUP = async (req, res, next) => {
 
 exports.logIn = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body.logInAccount;
 
     // Check if user exists in the database
     const user = await User.findOne({ email });
